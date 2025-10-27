@@ -187,24 +187,21 @@ def get_rays(H, W, K, c2w):
         c_y = K[1, 2]
 
         x_c = (i - c_x) / f_x
-        y_c = - (j - c_y) / f_y
+        y_c = -(j - c_y) / f_y
         z_c = -np.ones_like(i)
         
         return np.stack([x_c, y_c, z_c], axis=-1)
     
     directions = torch.tensor(calc_direction(u, v))
-    print(directions.shape)
     # 3. Transform camera coordinates to world coordinates using camera-to-world matrix c2w
     # normalize directions (TODO: CHECK about centering & torch compat)
-
-    print(c2w.shape)
     world_coords = torch.sum(directions[..., np.newaxis, :] * c2w[:3, :3], -1).float()
 
     # 4. Ray origins, Ray directions    
     rays_o = torch.tensor(np.broadcast_to(c2w[:3,-1], np.shape(world_coords)))
-    rays_d = world_coords - rays_o
-    print("Rays_d\n", rays_d)
+    rays_d = world_coords
     print("Rays_o\n", rays_o)
+    print("Rays_d\n", rays_d)
 
     # Your code ends here
     #############################################################
