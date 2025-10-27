@@ -361,7 +361,15 @@ def sample_points(rays_o, rays_d, near, far, N_samples):
     #    bin for better training
     #############################################################
     # Your code starts here
-    raise NotImplementedError("Not implemented")
+
+    # TODO: Check thiS! (how?)
+    
+    # 1. evenly spaced bins
+    bins = np.linspace(near, far, N_samples + 1)
+    random_samples = np.random.rand(N)
+
+    # 2. sampled randomly from each bin
+    z_vals = bins[:-1] + (bins[1] - bins[0]) * random_samples
 
     # Your code ends here
     #############################################################

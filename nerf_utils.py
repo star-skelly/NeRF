@@ -173,6 +173,9 @@ def get_rays(H, W, K, c2w):
     # later on we have a separate variable named viewdirs for normalized ray directions. Both versions will be useful.)
     #############################################################
     # Your code starts here
+
+    # TODO: generate test cases for this
+    
     # 1. Pixel coordinates
     ii = torch.tensor(np.arange(W))
     jj = torch.tensor(np.arange(H))
