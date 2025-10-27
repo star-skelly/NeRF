@@ -320,8 +320,10 @@ def compute_alpha(sigma, dists):
     # - delta is the distance between sample points (dists)
     #############################################################
     # Your code starts here
-    raise NotImplementedError("Not implemented")
-
+    Rel = torch.nn.ReLU()
+    non_neg_sigma = Rel(sigma)
+    alpha = 1 - np.exp(-non_neg_sigma * dists)
+    return alpha
     # Your code ends here
     #############################################################
 
