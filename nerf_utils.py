@@ -173,8 +173,41 @@ def get_rays(H, W, K, c2w):
     # later on we have a separate variable named viewdirs for normalized ray directions. Both versions will be useful.)
     #############################################################
     # Your code starts here
-    raise NotImplementedError("Not implemented")
+    # 1. Pixel coordinates
+    ii = torch.tensor(np.arange(W))
+    jj = torch.tensor(np.arange(H))
+    u, v = torch.meshgrid(ii, jj, indexing="xy")
+
+    # 2. Compute ray directions in camera coord system
+    def calc_direction(i, j):
+        f_x = K[0, 0]
+        c_x = K[0, 2]
+
+        f_y = K[1, 1]
+        c_y = K[1, 2]
+
+        x_c = (i - c_x) / f_x
+        y_c = - (j - c_y) / f_y
+        z_c = -np.ones_like(i)
+        
+        return np.stack([x_c, y_c, z_c], axis=-1)
     
+    directions = np.array(calc_direction(u, v))
+    print(directions.shape)
+    # 3. Transform camera coordinates to world coordinates using camera-to-world matrix c2w
+    # normalize directions (TODO: CHECK about centering & torch compat)
+
+    print(c2w.shape)
+    camera_origins = torch.tensor([K[0, 2], K[1, 2], -1]).float()
+    world_coords = torch.tensor(np.sum(directions[..., np.newaxis, :] * np.array(c2w[:3, :3]), -1)).float()
+
+    # 4. Ray origins, Ray directions    
+    rays_o = torch.tensor(np.broadcast_to(c2w[:3,-1], np.shape(world_coords)))
+    rays_d = world_coords - rays_o
+    rays_d = F.normalize(rays_d)
+    print("Rays_d\n", rays_d)
+    print("Rays_o\n", rays_o)
+
     # Your code ends here
     #############################################################
     return rays_o, rays_d
