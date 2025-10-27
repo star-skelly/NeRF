@@ -343,7 +343,17 @@ def compute_weights(alpha):
     # Then weights[i] = T[i] * alpha[i]
     #############################################################
     # Your code starts here
-    raise NotImplementedError("Not implemented")
+    print(alpha.shape)
+    first_ones = torch.tensor(torch.ones((alpha.shape[0], 1)))
+    Ti_val = torch.tensor(torch.ones_like(alpha[:,1:]) - alpha[:,1:])
+    print(first_ones.shape, Ti_val.shape)
+    temp = torch.cat((first_ones, Ti_val), dim=-1).float()
+    T = torch.cumprod(temp, dim=-1).float()
+
+    weights = torch.tensor(np.multiply(T, alpha)).float()
+    print("weights", weights)
+
+    return weights
 
     # Your code ends here
     #############################################################
