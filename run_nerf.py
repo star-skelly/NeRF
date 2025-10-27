@@ -292,7 +292,13 @@ def compute_bin_dists(z_vals, rays_d):
     # 3. Scale by ray direction magnitude: ||rays_d|| to get actual distances in 3D space
     #############################################################
     # Your code starts here
-    raise NotImplementedError("Not implemented")
+    
+    differences = np.array(np.diff(z_vals, axis=-1)).astype(float) # 1
+    inf = np.ones((differences.shape[0], 1)) * 1e10
+    differences = np.concatenate([differences, inf], axis=-1) # 2
+    differences *= np.linalg.norm(rays_d, axis=-1, keepdims=True) #3
+
+    return torch.tensor(differences).float()
 
     # Your code ends here
     #############################################################
