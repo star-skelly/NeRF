@@ -23,6 +23,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 np.random.seed(0)
 DEBUG = False
 
+torch.cuda.set_per_process_memory_fraction(0.9, 0)
+torch.backends.cuda.matmul.allow_tf32 = True
+torch.cuda.empty_cache()
 
 def batchify(fn, chunk):
     """Constructs a version of 'fn' that applies to smaller batches.
@@ -265,7 +268,11 @@ def volume_rendering(raw, z_vals, rays_d, white_bkgd=False):
     # - acc_map: sum of weights (total opacity) along each ray
     #############################################################
     # Your code starts here
-    raise NotImplementedError("Not implemented")
+    torch.cuda.empty_cache()
+    rgb_map = torch.sum(rgb * weights) # check dim
+    depth_map = torch.sum(dists * weights)
+    acc_map = torch.sum(weights)
+    torch.cuda.empty_cache()
 
     # Your code ends here
     #############################################################
@@ -292,7 +299,6 @@ def compute_bin_dists(z_vals, rays_d):
     # 3. Scale by ray direction magnitude: ||rays_d|| to get actual distances in 3D space
     #############################################################
     # Your code starts here
-    
     differences = np.array(np.diff(z_vals, axis=-1)).astype(float) # 1
     inf = np.ones((differences.shape[0], 1)) * 1e10
     differences = np.concatenate([differences, inf], axis=-1) # 2
@@ -343,16 +349,14 @@ def compute_weights(alpha):
     # Then weights[i] = T[i] * alpha[i]
     #############################################################
     # Your code starts here
-    print(alpha.shape)
+    torch.cuda.empty_cache()
     first_ones = torch.tensor(torch.ones((alpha.shape[0], 1)))
-    Ti_val = torch.tensor(torch.ones_like(alpha[:,1:]) - alpha[:,1:])
-    print(first_ones.shape, Ti_val.shape)
-    temp = torch.cat((first_ones, Ti_val), dim=-1).float()
-    T = torch.cumprod(temp, dim=-1).float()
+    Ti_val = torch.cat([first_ones, 1.0 - alpha + 1e-10], dim=-1)
+    torch.cuda.empty_cache()
 
-    weights = torch.tensor(np.multiply(T, alpha)).float()
-    print("weights", weights)
+    T = torch.cumprod(Ti_val[:, :-1], dim=-1).float()
 
+    weights = T * alpha
     return weights
 
     # Your code ends here
@@ -381,14 +385,17 @@ def sample_points(rays_o, rays_d, near, far, N_samples):
     # Your code starts here
 
     # TODO: Check thiS! (how?)
+    torch.cuda.empty_cache()
     
     # 1. evenly spaced bins
-    bins = np.linspace(near, far, N_samples + 1)
-    random_samples = np.random.rand(N)
+    N_rays = rays_o.shape[0]
+    t = torch.linspace(0., 1., steps=N_samples)
+    bins = near[:, None] * (1 - t) + far[:, None] * t
+    random_samples = torch.rand(N_samples)
 
     # 2. sampled randomly from each bin
     z_vals = bins[:-1] + (bins[1] - bins[0]) * random_samples
-
+    torch.cuda.empty_cache()
     # Your code ends here
     #############################################################
 

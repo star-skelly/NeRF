@@ -175,37 +175,38 @@ def get_rays(H, W, K, c2w):
     # Your code starts here
 
     # TODO: generate test cases for this
-    
+
     # 1. Pixel coordinates
-    ii = torch.tensor(np.arange(W))
-    jj = torch.tensor(np.arange(H))
-    u, v = torch.meshgrid(ii, jj, indexing="xy")
+    i, j = torch.meshgrid(
+        torch.arange(W, dtype=torch.float32),
+        torch.arange(H, dtype=torch.float32),
+        indexing="xy"
+    )
 
     # 2. Compute ray directions in camera coord system
-    def calc_direction(i, j):
-        f_x = K[0, 0]
-        c_x = K[0, 2]
+    f_x = K[0, 0]
+    c_x = K[0, 2]
 
-        f_y = K[1, 1]
-        c_y = K[1, 2]
+    f_y = K[1, 1]
+    c_y = K[1, 2]
 
-        x_c = (i - c_x) / f_x
-        y_c = -(j - c_y) / f_y
-        z_c = -np.ones_like(i)
+    x_c = (i - c_x) / f_x
+    y_c = -(j - c_y) / f_y
+    z_c = -torch.ones_like(i)
         
-        return np.stack([x_c, y_c, z_c], axis=-1)
+    directions = torch.stack([x_c, y_c, z_c], axis=-1)
     
-    directions = torch.tensor(calc_direction(u, v))
+    torch.cuda.empty_cache()
     # 3. Transform camera coordinates to world coordinates using camera-to-world matrix c2w
     # normalize directions (TODO: CHECK about centering & torch compat)
-    world_coords = torch.sum(directions[..., np.newaxis, :] * c2w[:3, :3], -1).float()
-
-    # 4. Ray origins, Ray directions    
-    rays_o = torch.tensor(np.broadcast_to(c2w[:3,-1], np.shape(world_coords)))
-    rays_d = world_coords
-    print("Rays_o\n", rays_o)
-    print("Rays_d\n", rays_d)
-
+    
+    rays_d = directions @ c2w[:3, :3].T
+    rays_d = rays_d.reshape(H, W, 3)
+    
+    # 4. Ray origins, directions
+    rays_o = c2w[:3, 3].expand_as(rays_d)
+    rays_o = rays_o
+    rays_d = rays_d
     # Your code ends here
     #############################################################
     return rays_o, rays_d
