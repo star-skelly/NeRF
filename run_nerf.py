@@ -270,9 +270,9 @@ def volume_rendering(raw, z_vals, rays_d, white_bkgd=False):
     #############################################################
     # Your code starts here
     torch.cuda.empty_cache()
-    rgb_map = torch.sum(rgb * weights) # check dim
-    depth_map = torch.sum(dists * weights)
-    acc_map = torch.sum(weights)
+    rgb_map = torch.sum(rgb * weights[..., None], dim=1) # check dim
+    depth_map = torch.sum(dists * weights, dim=1)
+    acc_map = torch.sum(weights, dim=1)
     torch.cuda.empty_cache()
 
     # Your code ends here
@@ -304,7 +304,7 @@ def compute_bin_dists(z_vals, rays_d):
 
     inf = torch.full((*(z_vals.shape[:-1]), 1), 1e10)
     differences = torch.cat([differences, inf], -1) # 2
-    differences *= torch.linalg.norm(rays_d, dim=-1, keepdim=True) #3
+    differences = differences * torch.linalg.norm(rays_d, dim=-1, keepdim=True) #3
 
     return differences.float()
 
@@ -353,11 +353,11 @@ def compute_weights(alpha):
     #############################################################
     # Your code starts here
     torch.cuda.empty_cache()
-    first_ones = torch.ones((alpha.shape[0], 1))
-    Ti_val = torch.cat([first_ones, 1.0 - alpha + 1e-10], dim=-1)
+    first_ones = torch.ones((*(alpha.shape[:-1]), 1))
+    Ti_val = 1.0 - alpha + 1e-10
     torch.cuda.empty_cache()
 
-    T = torch.cumprod(Ti_val[:, :-1], dim=-1).float()
+    T = torch.cat([first_ones, torch.cumprod(Ti_val[...,:-1], dim=-1)], dim=-1).float()
 
     weights = T * alpha
     return weights
