@@ -18,14 +18,13 @@ from load_deepvoxels import load_dv_data
 from load_blender import load_blender_data
 from load_LINEMOD import load_LINEMOD_data
 
+import os
+os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "max_split_size_mb:128"
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 np.random.seed(0)
 DEBUG = False
 
-torch.cuda.set_per_process_memory_fraction(0.9, 0)
-torch.backends.cuda.matmul.allow_tf32 = True
-torch.cuda.empty_cache()
 
 def batchify(fn, chunk):
     """Constructs a version of 'fn' that applies to smaller batches.
@@ -123,6 +122,8 @@ def render_path(render_poses, hwf, K, chunk, render_kwargs, gt_imgs=None, savedi
     for i, c2w in enumerate(tqdm(render_poses)):
         t = time.time()
         rays_o, rays_d = get_rays(H, W, K, c2w)
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
         rgb, depth, acc, _ = render(rays_o, rays_d, chunk=chunk, **render_kwargs)
         rgbs.append(rgb.cpu().numpy())
         depths.append(depth.cpu().numpy())
@@ -299,12 +300,13 @@ def compute_bin_dists(z_vals, rays_d):
     # 3. Scale by ray direction magnitude: ||rays_d|| to get actual distances in 3D space
     #############################################################
     # Your code starts here
-    differences = np.array(np.diff(z_vals, axis=-1)).astype(float) # 1
-    inf = np.ones((differences.shape[0], 1)) * 1e10
-    differences = np.concatenate([differences, inf], axis=-1) # 2
-    differences *= np.linalg.norm(rays_d, axis=-1, keepdims=True) #3
+    differences = z_vals[..., 1:] - z_vals[..., :-1]
 
-    return torch.tensor(differences).float()
+    inf = torch.full((*(z_vals.shape[:-1]), 1), 1e10)
+    differences = torch.cat([differences, inf], -1) # 2
+    differences *= torch.linalg.norm(rays_d, dim=-1, keepdim=True) #3
+
+    return differences.float()
 
     # Your code ends here
     #############################################################
@@ -326,9 +328,10 @@ def compute_alpha(sigma, dists):
     # - delta is the distance between sample points (dists)
     #############################################################
     # Your code starts here
-    Rel = torch.nn.ReLU()
-    non_neg_sigma = Rel(sigma)
-    alpha = 1 - np.exp(-non_neg_sigma * dists)
+    torch.cuda.empty_cache()
+    non_neg_sigma = torch.relu(sigma)
+    alpha = 1.0 - torch.exp(-non_neg_sigma * dists)
+    torch.cuda.empty_cache()
     return alpha
     # Your code ends here
     #############################################################
@@ -350,7 +353,7 @@ def compute_weights(alpha):
     #############################################################
     # Your code starts here
     torch.cuda.empty_cache()
-    first_ones = torch.tensor(torch.ones((alpha.shape[0], 1)))
+    first_ones = torch.ones((alpha.shape[0], 1))
     Ti_val = torch.cat([first_ones, 1.0 - alpha + 1e-10], dim=-1)
     torch.cuda.empty_cache()
 

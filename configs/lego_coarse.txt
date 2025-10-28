@@ -7,8 +7,8 @@ perturb = True
 
 white_bkgd = True
 lrate_decay = 500
-chunk = 16368
-netchunk = 32768
+chunk = 128
+netchunk = 256
 
 N_samples = 64
 N_importance = 0
