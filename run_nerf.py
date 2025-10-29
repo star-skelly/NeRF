@@ -272,12 +272,6 @@ def volume_rendering(raw, z_vals, rays_d, white_bkgd=False):
     # flatten from 4d to 3d
     
     print("\nRaw:", raw.shape)
-    print("RGB:", rgb.shape)
-    n_rays = raw.shape[0] * raw.shape[1]
-    n_samples = raw.shape[2]
-    rgb = rgb.reshape(n_rays, n_samples, 3)
-    weights = weights.reshape(n_rays, n_samples)
-    dists = dists.reshape(n_rays, n_samples)
 
     rgb_map = (rgb * weights.unsqueeze(-1)).sum(dim=1)
     print("RGB:", rgb_map.shape)
