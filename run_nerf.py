@@ -271,15 +271,9 @@ def volume_rendering(raw, z_vals, rays_d, white_bkgd=False):
     # Your code starts here
     # flatten from 4d to 3d
     
-    print("\nRaw:", raw.shape)
-
     rgb_map = (rgb * weights.unsqueeze(-1)).sum(dim=1)
-    print("RGB:", rgb_map.shape)
     depth_map = torch.sum(dists * weights, dim=-1)
-    print("Depth:", depth_map.shape)
     acc_map = torch.sum(weights, dim=-1)
-    print("Acc:", acc_map.shape)
-    print("Weights:", weights.shape)
     # Your code ends here
     #############################################################
 
@@ -305,15 +299,11 @@ def compute_bin_dists(z_vals, rays_d):
     # 3. Scale by ray direction magnitude: ||rays_d|| to get actual distances in 3D space
     #############################################################
     # Your code starts here
-    print("Z vals:", z_vals.shape)
     differences = z_vals[..., 1:] - z_vals[..., :-1]
-    print("Diffs:", differences.shape)
 
     inf = torch.full((*(z_vals.shape[:-1]), 1), 1e10)
     differences = torch.cat([differences, inf], -1) # 2
-    print("diffs p2:", differences.shape)
     differences = differences * torch.linalg.norm(rays_d, dim=(-2,-1), keepdim=True) #3
-    print("Diffs final:", differences.shape)
 
     return differences.float()
 
@@ -395,8 +385,6 @@ def sample_points(rays_o, rays_d, near, far, N_samples):
     #############################################################
     # Your code starts here
 
-    # TODO: Check thiS! (how?)
-    print("Rays O:", rays_o.shape)
     torch.cuda.empty_cache()
     
     # 1. evenly spaced bins
