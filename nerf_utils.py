@@ -197,9 +197,8 @@ def get_rays(H, W, K, c2w):
     directions = torch.stack([x_c, y_c, z_c], axis=-1)
     
     torch.cuda.empty_cache()
-    # 3. Transform camera coordinates to world coordinates using camera-to-world matrix c2w
-    # normalize directions (TODO: CHECK about centering & torch compat)
     
+    # 3. Transform camera coordinates to world coordinates using camera-to-world matrix c2w    
     rays_d = directions @ c2w[:3, :3].T
     rays_d = rays_d.reshape(H, W, 3)
     

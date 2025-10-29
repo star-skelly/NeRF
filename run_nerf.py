@@ -272,7 +272,8 @@ def volume_rendering(raw, z_vals, rays_d, white_bkgd=False):
     # flatten from 4d to 3d
     
     rgb_map = (rgb * weights.unsqueeze(-1)).sum(dim=1)
-    depth_map = torch.sum(dists * weights, dim=-1)
+
+    depth_map = torch.sum(z_vals * weights, dim=-1)
     acc_map = torch.sum(weights, dim=-1)
     # Your code ends here
     #############################################################
@@ -303,7 +304,7 @@ def compute_bin_dists(z_vals, rays_d):
 
     inf = torch.full((*(z_vals.shape[:-1]), 1), 1e10)
     differences = torch.cat([differences, inf], -1) # 2
-    differences = differences * torch.linalg.norm(rays_d, dim=(-2,-1), keepdim=True) #3
+    differences = differences * torch.norm(rays_d, dim=1).unsqueeze(-1) #3
 
     return differences.float()
 
